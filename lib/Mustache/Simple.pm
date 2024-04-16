@@ -382,50 +382,50 @@ sub _resolve_section {
 sub _resolve_invert_section {
   my $self = shift;
   my ( $tags, $i ) = @_;
-  my $tag    = $tags->[$i];                   # the current tag
-        my $j;
-        my $nested = 0;
-        for ( $j = $i + 1; $j < @$tags; $j++ ) {
-          if ( $tag->{txt} eq $tags->[$j]->{txt} ) {
-            $nested++, next
-                if $tags->[$j]->{type} eq '^';    # nested sections with the
-            if ( $tags->[$j]->{type} eq '/' )     #   same name
-            {
-              next if $nested--;
-              last;
-            }
-          }
-        }
-        croak 'No end tag found for {{#' . $tag->{txt} . '}}' if $j == @$tags;
-        my @subtags = @$tags[ $i + 1 .. $j ];
-        my $txt;
-        if ( $tag->{txt} =~ /\./ ) {
-          my @dots = dottags( $tag->{txt} );
-          $txt = $self->resolve( undef, @dots );
-        }
-        else {
-          $txt = $self->find( $tag->{txt} );  # get the entry from the context
-        }
-        my $ans = '';
-        given ( reftype $txt ) {
-          when ('ARRAY') {
-            $ans = $self->resolve( undef, @subtags ) if @$txt == 0;
-          }
-          when ('HASH') {
-            $ans = $self->resolve( undef, @subtags ) if keys %$txt == 0;
-          }
-          when ('CODE') {
+  my $tag = $tags->[$i];    # the current tag
+  my $j;
+  my $nested = 0;
+  for ( $j = $i + 1; $j < @$tags; $j++ ) {
+    if ( $tag->{txt} eq $tags->[$j]->{txt} ) {
+      $nested++, next
+          if $tags->[$j]->{type} eq '^';    # nested sections with the
+      if ( $tags->[$j]->{type} eq '/' )     #   same name
+      {
+        next if $nested--;
+        last;
+      }
+    }
+  }
+  croak 'No end tag found for {{#' . $tag->{txt} . '}}' if $j == @$tags;
+  my @subtags = @$tags[ $i + 1 .. $j ];
+  my $txt;
+  if ( $tag->{txt} =~ /\./ ) {
+    my @dots = dottags( $tag->{txt} );
+    $txt = $self->resolve( undef, @dots );
+  }
+  else {
+    $txt = $self->find( $tag->{txt} );    # get the entry from the context
+  }
+  my $ans = '';
+  given ( reftype $txt ) {
+    when ('ARRAY') {
+      $ans = $self->resolve( undef, @subtags ) if @$txt == 0;
+    }
+    when ('HASH') {
+      $ans = $self->resolve( undef, @subtags ) if keys %$txt == 0;
+    }
+    when ('CODE') {
 
   #                       $ans = $self->resolve(undef, @subtags) unless &$txt;
   # The above line is rem'd out to comply with the test:
   #   'Lambdas used for inverted sections should be considered truthy.'
   # although I'm not sure I agree with it.
-          }
-          default {
-            $ans = $self->resolve( undef, @subtags ) unless $txt;
-          }
-        }
-        $ans = "$tag->{tab}$ans" if $tag->{tab};    # replace the indent
+    }
+    default {
+      $ans = $self->resolve( undef, @subtags ) unless $txt;
+    }
+  }
+  $ans = "$tag->{tab}$ans" if $tag->{tab};    # replace the indent
   return ( $ans, $j );
 }
 
@@ -462,13 +462,13 @@ sub resolve {
         $i = $j;
         $result .= $out;
       }
-      when ('>') {    # partial - see include_partial()
+      when ('>') {             # partial - see include_partial()
         my $saved = $self->{delimiters};
         $self->{delimiters} = [qw({{ }})];
         $result .= $self->include_partial( $tag->{txt} );
         $self->{delimiters} = $saved;
       }
-      default {       # allow for future expansion
+      default {                # allow for future expansion
         croak "Unknown tag type in \{\{$_$tag->{txt}}}";
       }
     }
