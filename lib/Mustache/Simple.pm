@@ -324,60 +324,59 @@ sub _resolve_variable {
 
 sub _resolve_section {
   my $self = shift;
-  my ($tags, $i) = @_;
-  my $tag = $tags->[$i];       # the current tag
+  my ( $tags, $i ) = @_;
+  my $tag    = $tags->[$i];                   # the current tag
   my $result = '';
-        my $j;
-        my $nested = 0;
-        for ( $j = $i + 1; $j < @$tags; $j++ )    # find the end
-        {
-          if ( $tag->{txt} eq $tags->[$j]->{txt} ) {
-            $nested++, next
-                if $tags->[$j]->{type} eq '#';     # nested sections with the
-            if ( $tags->[$j]->{type} eq '/' )      #   same name
-            {
-              next if $nested--;
-              last;
-            }
-          }
-        }
-        croak 'No end tag found for {{#' . $tag->{txt} . '}}' if $j == @$tags;
-        my @subtags = @$tags[ $i + 1 .. $j ];    # get the tags for the section
-        my $txt;
-        if ( $tag->{txt} =~ /\./ ) {
-          my @dots = dottags( $tag->{txt} );
-          $txt = $self->resolve( undef, @dots );
-        }
-        else {
-          # wantarray!!!
-          my @ret =
-              $self->find( $tag->{txt} );    # get the entry from the context
-          if ( scalar @ret == 0 ) {
-            $txt = undef;
-          }
-          elsif ( scalar @ret == 1 ) {
-            $txt = $ret[0];
-          }
-          else {
-            $txt = \@ret;
-          }
-        }
-        given ( reftype $txt ) {
-          when ('ARRAY') {                   # an array of hashes (hopefully)
-            $result .= $self->resolve( $_, @subtags ) foreach @$txt;
-          }
-          when ('CODE') {    # call user code which may call render()
-            $result .= $self->render( $txt->( reassemble @subtags ) );
-          }
-          when ('HASH') {    # use the hash as context
-            break unless scalar %$txt;
-            $result .= $self->resolve( $txt, @subtags );
-          }
-          default {          # resolve the tags in current context
-            $result .= $self->resolve( undef, @subtags ) if $txt;
-          }
-        }
-  return ($result, $j);
+  my $j;
+  my $nested = 0;
+  for ( $j = $i + 1; $j < @$tags; $j++ )      # find the end
+  {
+    if ( $tag->{txt} eq $tags->[$j]->{txt} ) {
+      $nested++, next
+          if $tags->[$j]->{type} eq '#';      # nested sections with the
+      if ( $tags->[$j]->{type} eq '/' )       #   same name
+      {
+        next if $nested--;
+        last;
+      }
+    }
+  }
+  croak 'No end tag found for {{#' . $tag->{txt} . '}}' if $j == @$tags;
+  my @subtags = @$tags[ $i + 1 .. $j ];    # get the tags for the section
+  my $txt;
+  if ( $tag->{txt} =~ /\./ ) {
+    my @dots = dottags( $tag->{txt} );
+    $txt = $self->resolve( undef, @dots );
+  }
+  else {
+    # wantarray!!!
+    my @ret = $self->find( $tag->{txt} );    # get the entry from the context
+    if ( scalar @ret == 0 ) {
+      $txt = undef;
+    }
+    elsif ( scalar @ret == 1 ) {
+      $txt = $ret[0];
+    }
+    else {
+      $txt = \@ret;
+    }
+  }
+  given ( reftype $txt ) {
+    when ('ARRAY') {                         # an array of hashes (hopefully)
+      $result .= $self->resolve( $_, @subtags ) foreach @$txt;
+    }
+    when ('CODE') {    # call user code which may call render()
+      $result .= $self->render( $txt->( reassemble @subtags ) );
+    }
+    when ('HASH') {    # use the hash as context
+      break unless scalar %$txt;
+      $result .= $self->resolve( $txt, @subtags );
+    }
+    default {          # resolve the tags in current context
+      $result .= $self->resolve( undef, @subtags ) if $txt;
+    }
+  }
+  return ( $result, $j );
 }
 
 # This is the main worker function.  It builds up the result from the tags.
@@ -404,11 +403,11 @@ sub resolve {
         $result .= $self->_resolve_variable( $tag, )
       }
       when ('#') {             # it's a section start
-        my ($out, $j) = $self->_resolve_section( \@tags, $i );
-        $i = $j;   
+        my ( $out, $j ) = $self->_resolve_section( \@tags, $i );
+        $i = $j;
         $result .= $out;
       }
-      when ('^') {    # inverse section
+      when ('^') {             # inverse section
         my $j;
         my $nested = 0;
         for ( $j = $i + 1; $j < @tags; $j++ ) {
