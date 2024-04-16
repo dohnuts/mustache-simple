@@ -325,7 +325,7 @@ sub _resolve_variable {
 sub _resolve_section {
   my $self = shift;
   my ( $tags, $i ) = @_;
-  my $tag    = $tags->[$i];                   # the current tag
+  my $tag = $tags->[$i];                      # the current tag
   my $j;
   my $nested = 0;
   for ( $j = $i + 1; $j < @$tags; $j++ )      # find the end
@@ -362,34 +362,31 @@ sub _resolve_section {
   }
   my $result = '';
   my $reftxt = reftype $txt;
-  if (not defined $reftxt) {
+  if ( not defined $reftxt ) {
     $result .= $self->resolve( undef, @subtags ) if $txt;
     return ( $result, $j );
   }
-  if ( 'ARRAY' eq $reftxt) { # an array of hashes (hopefully)
+  if ( 'ARRAY' eq $reftxt ) {    # an array of hashes (hopefully)
     $result .= $self->resolve( $_, @subtags ) foreach @$txt;
     return ( $result, $j );
   }
-  if ( 'CODE' eq $reftxt) {    # call user code which may call render()
+  if ( 'CODE' eq $reftxt ) {     # call user code which may call render()
     $result .= $self->render( $txt->( reassemble @subtags ) );
     return ( $result, $j );
   }
-  given ( $reftxt ) {
-    when ('HASH') {    # use the hash as context
-      break unless scalar %$txt;
-      $result .= $self->resolve( $txt, @subtags );
-    }
-    default {          # resolve the tags in current context
-      $result .= $self->resolve( undef, @subtags ) if $txt;
-    }
+  if ( 'HASH' eq $reftxt ) {     # use the hash as context
+    return ( $result, $j ) unless scalar %$txt;
+    $result .= $self->resolve( $txt, @subtags );
+    return ( $result, $j );
   }
+  $result .= $self->resolve( undef, @subtags ) if $txt;
   return ( $result, $j );
 }
 
 sub _resolve_invert_section {
   my $self = shift;
   my ( $tags, $i ) = @_;
-  my $tag = $tags->[$i];    # the current tag
+  my $tag = $tags->[$i];         # the current tag
   my $j;
   my $nested = 0;
   for ( $j = $i + 1; $j < @$tags; $j++ ) {
