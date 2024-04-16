@@ -326,7 +326,6 @@ sub _resolve_section {
   my $self = shift;
   my ( $tags, $i ) = @_;
   my $tag    = $tags->[$i];                   # the current tag
-  my $result = '';
   my $j;
   my $nested = 0;
   for ( $j = $i + 1; $j < @$tags; $j++ )      # find the end
@@ -361,13 +360,21 @@ sub _resolve_section {
       $txt = \@ret;
     }
   }
-  given ( reftype $txt ) {
-    when ('ARRAY') {                         # an array of hashes (hopefully)
-      $result .= $self->resolve( $_, @subtags ) foreach @$txt;
-    }
-    when ('CODE') {    # call user code which may call render()
-      $result .= $self->render( $txt->( reassemble @subtags ) );
-    }
+  my $result = '';
+  my $reftxt = reftype $txt;
+  if (not defined $reftxt) {
+    $result .= $self->resolve( undef, @subtags ) if $txt;
+    return ( $result, $j );
+  }
+  if ( 'ARRAY' eq $reftxt) { # an array of hashes (hopefully)
+    $result .= $self->resolve( $_, @subtags ) foreach @$txt;
+    return ( $result, $j );
+  }
+  if ( 'CODE' eq $reftxt) {    # call user code which may call render()
+    $result .= $self->render( $txt->( reassemble @subtags ) );
+    return ( $result, $j );
+  }
+  given ( $reftxt ) {
     when ('HASH') {    # use the hash as context
       break unless scalar %$txt;
       $result .= $self->resolve( $txt, @subtags );
