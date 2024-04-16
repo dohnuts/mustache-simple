@@ -293,33 +293,33 @@ sub include_partial {
 }
 
 sub _resolve_variable {
-  my $self    = shift;
+  my $self = shift;
   my ($tag) = @_;
-        my $txt;
-        if ( $tag->{txt} eq '.' ) {
-          $txt = $self->{stack}->top;
-        }
-        elsif ( $tag->{txt} =~ /\./ ) {
-          my @dots = dottags $tag->{txt}, $tag->{type};
-          $txt = $self->resolve( undef, @dots );
-        }
-        else {
-          $txt = $self->find( $tag->{txt} );  # get the entry from the context
-          if ( defined $txt ) {
-            if ( ref $txt eq 'CODE' ) {
-              my $saved = $self->{delimiters};
-              $self->{delimiters} = [qw({{ }})];
-              $txt                = $self->render( $txt->() );
-              $self->{delimiters} = $saved;
-            }
-          }
-          else {
-            croak qq(No context for "$tag->{txt}") if $self->throw;
-            $txt = '';
-          }
-        }
-        $txt = "$tag->{tab}$txt" if $tag->{tab};    # replace the indent
-        return $tag->{type} ? $txt : escape $txt;
+  my $txt;
+  if ( $tag->{txt} eq '.' ) {
+    $txt = $self->{stack}->top;
+  }
+  elsif ( $tag->{txt} =~ /\./ ) {
+    my @dots = dottags $tag->{txt}, $tag->{type};
+    $txt = $self->resolve( undef, @dots );
+  }
+  else {
+    $txt = $self->find( $tag->{txt} );    # get the entry from the context
+    if ( defined $txt ) {
+      if ( ref $txt eq 'CODE' ) {
+        my $saved = $self->{delimiters};
+        $self->{delimiters} = [qw({{ }})];
+        $txt                = $self->render( $txt->() );
+        $self->{delimiters} = $saved;
+      }
+    }
+    else {
+      croak qq(No context for "$tag->{txt}") if $self->throw;
+      $txt = '';
+    }
+  }
+  $txt = "$tag->{tab}$txt" if $tag->{tab};    # replace the indent
+  return $tag->{type} ? $txt : escape $txt;
 }
 
 # This is the main worker function.  It builds up the result from the tags.
@@ -343,17 +343,17 @@ sub resolve {
       when ('/') { break; }    # it's a section end - skip
       when ('=') { break; }    # delimiter change
       when (/^([{&])?$/) {     # it's a variable
-        $result .= $self->_resolve_variable($tag,)
+        $result .= $self->_resolve_variable( $tag, )
       }
-      when ('#') {                                  # it's a section start
+      when ('#') {             # it's a section start
         my $j;
         my $nested = 0;
-        for ( $j = $i + 1; $j < @tags; $j++ )       # find the end
+        for ( $j = $i + 1; $j < @tags; $j++ )    # find the end
         {
           if ( $tag->{txt} eq $tags[$j]->{txt} ) {
             $nested++, next
-                if $tags[$j]->{type} eq '#';        # nested sections with the
-            if ( $tags[$j]->{type} eq '/' )         #   same name
+                if $tags[$j]->{type} eq '#';     # nested sections with the
+            if ( $tags[$j]->{type} eq '/' )      #   same name
             {
               next if $nested--;
               last;
