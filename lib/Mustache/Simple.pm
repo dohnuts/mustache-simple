@@ -410,24 +410,28 @@ sub _resolve_invert_section {
   else {
     $txt = $self->find( $tag->{txt} );    # get the entry from the context
   }
-  my $ans = '';
-  given ( reftype $txt ) {
-    when ('ARRAY') {
-      $ans = $self->resolve( undef, @subtags ) if @$txt == 0;
-    }
-    when ('HASH') {
-      $ans = $self->resolve( undef, @subtags ) if keys %$txt == 0;
-    }
-    when ('CODE') {
+  my $ans    = '';
+  my $reftxt = reftype $txt;
+  if ( not defined $reftxt ) {
+    $ans = $self->resolve( undef, @subtags ) unless $txt;
+  }
+  elsif ( 'ARRAY' eq $reftxt ) {
+    $ans = $self->resolve( undef, @subtags ) if @$txt == 0;
+  }
+  elsif ( 'HASH' eq $reftxt ) {
+    $ans = $self->resolve( undef, @subtags ) if keys %$txt == 0;
+  }
+  elsif ( 'CODE' eq $reftxt ) {
 
-  #                       $ans = $self->resolve(undef, @subtags) unless &$txt;
-  # The above line is rem'd out to comply with the test:
-  #   'Lambdas used for inverted sections should be considered truthy.'
-  # although I'm not sure I agree with it.
-    }
-    default {
-      $ans = $self->resolve( undef, @subtags ) unless $txt;
-    }
+    # Y
+    # $ans = $self->resolve(undef, @subtags) unless &$txt;
+    # The above line is rem'd out to comply with the test:
+    #   'Lambdas used for inverted sections should be considered truthy.'
+    # although I'm not sure I agree with it.
+    $ans = '';
+  }
+  else {
+    $ans = $self->resolve( undef, @subtags ) unless $txt;
   }
   $ans = "$tag->{tab}$ans" if $tag->{tab};    # replace the indent
   return ( $ans, $j );
