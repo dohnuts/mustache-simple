@@ -292,27 +292,9 @@ sub include_partial {
   $self->render($tag);
 }
 
-# This is the main worker function.  It builds up the result from the tags.
-# Passed the current context and the array of tags
-# Returns the final text
-# Note, this is called recursively, directly for sections and
-# indirectly via render() for partials
-sub resolve {
+sub _resolve_variable {
   my $self    = shift;
-  my $context = shift // {};
-  $self->push($context);
-  my @tags   = @_;
-  my $result = '';
-  for ( my $i = 0; $i < @tags; $i++ ) {
-    my $tag = $tags[$i];       # the current tag
-    $result .= $tag->{pre};    # add in the intervening text
-    given ( $tag->{type} ) {
-      when ('!') {             # it's a comment
-                               # $result .= $tag->{tab} if $tag->{tab};
-      }
-      when ('/') { break; }    # it's a section end - skip
-      when ('=') { break; }    # delimiter change
-      when (/^([{&])?$/) {     # it's a variable
+  my ($tag) = @_;
         my $txt;
         if ( $tag->{txt} eq '.' ) {
           $txt = $self->{stack}->top;
@@ -337,7 +319,31 @@ sub resolve {
           }
         }
         $txt = "$tag->{tab}$txt" if $tag->{tab};    # replace the indent
-        $result .= $tag->{type} ? $txt : escape $txt;
+        return $tag->{type} ? $txt : escape $txt;
+}
+
+# This is the main worker function.  It builds up the result from the tags.
+# Passed the current context and the array of tags
+# Returns the final text
+# Note, this is called recursively, directly for sections and
+# indirectly via render() for partials
+sub resolve {
+  my $self    = shift;
+  my $context = shift // {};
+  $self->push($context);
+  my @tags   = @_;
+  my $result = '';
+  for ( my $i = 0; $i < @tags; $i++ ) {
+    my $tag = $tags[$i];       # the current tag
+    $result .= $tag->{pre};    # add in the intervening text
+    given ( $tag->{type} ) {
+      when ('!') {             # it's a comment
+                               # $result .= $tag->{tab} if $tag->{tab};
+      }
+      when ('/') { break; }    # it's a section end - skip
+      when ('=') { break; }    # delimiter change
+      when (/^([{&])?$/) {     # it's a variable
+        $result .= $self->_resolve_variable($tag,)
       }
       when ('#') {                                  # it's a section start
         my $j;
