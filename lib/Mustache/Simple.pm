@@ -322,46 +322,27 @@ sub _resolve_variable {
   return $tag->{type} ? $txt : escape $txt;
 }
 
-# This is the main worker function.  It builds up the result from the tags.
-# Passed the current context and the array of tags
-# Returns the final text
-# Note, this is called recursively, directly for sections and
-# indirectly via render() for partials
-sub resolve {
-  my $self    = shift;
-  my $context = shift // {};
-  $self->push($context);
-  my @tags   = @_;
+sub _resolve_section {
+  my $self = shift;
+  my ($tags, $i) = @_;
+  my $tag = $tags->[$i];       # the current tag
   my $result = '';
-  for ( my $i = 0; $i < @tags; $i++ ) {
-    my $tag = $tags[$i];       # the current tag
-    $result .= $tag->{pre};    # add in the intervening text
-    given ( $tag->{type} ) {
-      when ('!') {             # it's a comment
-                               # $result .= $tag->{tab} if $tag->{tab};
-      }
-      when ('/') { break; }    # it's a section end - skip
-      when ('=') { break; }    # delimiter change
-      when (/^([{&])?$/) {     # it's a variable
-        $result .= $self->_resolve_variable( $tag, )
-      }
-      when ('#') {             # it's a section start
         my $j;
         my $nested = 0;
-        for ( $j = $i + 1; $j < @tags; $j++ )    # find the end
+        for ( $j = $i + 1; $j < @$tags; $j++ )    # find the end
         {
-          if ( $tag->{txt} eq $tags[$j]->{txt} ) {
+          if ( $tag->{txt} eq $tags->[$j]->{txt} ) {
             $nested++, next
-                if $tags[$j]->{type} eq '#';     # nested sections with the
-            if ( $tags[$j]->{type} eq '/' )      #   same name
+                if $tags->[$j]->{type} eq '#';     # nested sections with the
+            if ( $tags->[$j]->{type} eq '/' )      #   same name
             {
               next if $nested--;
               last;
             }
           }
         }
-        croak 'No end tag found for {{#' . $tag->{txt} . '}}' if $j == @tags;
-        my @subtags = @tags[ $i + 1 .. $j ];    # get the tags for the section
+        croak 'No end tag found for {{#' . $tag->{txt} . '}}' if $j == @$tags;
+        my @subtags = @$tags[ $i + 1 .. $j ];    # get the tags for the section
         my $txt;
         if ( $tag->{txt} =~ /\./ ) {
           my @dots = dottags( $tag->{txt} );
@@ -396,7 +377,36 @@ sub resolve {
             $result .= $self->resolve( undef, @subtags ) if $txt;
           }
         }
-        $i = $j;
+  return ($result, $j);
+}
+
+# This is the main worker function.  It builds up the result from the tags.
+# Passed the current context and the array of tags
+# Returns the final text
+# Note, this is called recursively, directly for sections and
+# indirectly via render() for partials
+sub resolve {
+  my $self    = shift;
+  my $context = shift // {};
+  $self->push($context);
+  my @tags   = @_;
+  my $result = '';
+  for ( my $i = 0; $i < @tags; $i++ ) {
+    my $tag = $tags[$i];       # the current tag
+    $result .= $tag->{pre};    # add in the intervening text
+    given ( $tag->{type} ) {
+      when ('!') {             # it's a comment
+                               # $result .= $tag->{tab} if $tag->{tab};
+      }
+      when ('/') { break; }    # it's a section end - skip
+      when ('=') { break; }    # delimiter change
+      when (/^([{&])?$/) {     # it's a variable
+        $result .= $self->_resolve_variable( $tag, )
+      }
+      when ('#') {             # it's a section start
+        my ($out, $j) = $self->_resolve_section( \@tags, $i );
+        $i = $j;   
+        $result .= $out;
       }
       when ('^') {    # inverse section
         my $j;
