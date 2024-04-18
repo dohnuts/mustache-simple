@@ -451,34 +451,36 @@ sub resolve {
   for ( my $i = 0; $i < @tags; $i++ ) {
     my $tag = $tags[$i];       # the current tag
     $result .= $tag->{pre};    # add in the intervening text
-    given ( $tag->{type} ) {
-      when ('!') {             # it's a comment
-                               # $result .= $tag->{tab} if $tag->{tab};
-      }
-      when ('/') { break; }    # it's a section end - skip
-      when ('=') { break; }    # delimiter change
-      when (/^([{&])?$/) {     # it's a variable
-        $result .= $self->_resolve_variable( $tag, )
-      }
-      when ('#') {             # it's a section start
-        my ( $out, $j ) = $self->_resolve_section( \@tags, $i );
-        $i = $j;
-        $result .= $out;
-      }
-      when ('^') {             # inverse section
-        my ( $out, $j ) = $self->_resolve_invert_section( \@tags, $i );
-        $i = $j;
-        $result .= $out;
-      }
-      when ('>') {             # partial - see include_partial()
-        my $saved = $self->{delimiters};
-        $self->{delimiters} = [qw({{ }})];
-        $result .= $self->include_partial( $tag->{txt} );
-        $self->{delimiters} = $saved;
-      }
-      default {                # allow for future expansion
-        croak "Unknown tag type in \{\{$_$tag->{txt}}}";
-      }
+    if ( $tag->{type} eq '!' or $tag->{type} eq '/' or $tag->{type} eq '=' ) {
+      # given ($tag->{type})
+      # when ('!') {             # it's a comment
+      #                          # $result .= $tag->{tab} if $tag->{tab};
+      # }
+      # when ('/') { break; }    # it's a section end - skip
+      # when ('=') { break; }    # delimiter change
+      next;
+    }
+    elsif ( $tag->{type} eq '>' ) {    # partial - see include_partial()
+      my $saved = $self->{delimiters};
+      $self->{delimiters} = [qw({{ }})];
+      $result .= $self->include_partial( $tag->{txt} );
+      $self->{delimiters} = $saved;
+    }
+    elsif ( $tag->{type} eq '^' ) {    # inverse section
+      my ( $out, $j ) = $self->_resolve_invert_section( \@tags, $i );
+      $i = $j;
+      $result .= $out;
+    }
+    elsif ( $tag->{type} eq '#' ) {    # it's a section start
+      my ( $out, $j ) = $self->_resolve_section( \@tags, $i );
+      $i = $j;
+      $result .= $out;
+    }
+    elsif ( $tag->{type} =~ /^([{&])?$/ ) {
+      $result .= $self->_resolve_variable( $tag, );
+    }
+    else {
+      croak "Unknown tag type in \{\{$_$tag->{txt}}}";
     }
   }
   $self->pop;
