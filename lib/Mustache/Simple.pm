@@ -8,10 +8,10 @@ use experimental qw(switch);
 use version;
 
 # Don't forget to change the version in the pod
-our $VERSION = version->declare('v1.3.6');
+our $VERSION = version->declare('v1.3.7');
 
 use File::Spec;
-use Mustache::Simple::ContextStack v1.3.6;
+use Mustache::Simple::ContextStack v1.3.7;
 use Scalar::Util qw( reftype );
 
 use Carp;
@@ -30,7 +30,7 @@ See L<http://mustache.github.com/>.
 
 =head1 VERSION
 
-This document describes Mustache::Simple version 1.3.6
+This document describes Mustache::Simple version 1.3.7
 
 =head1 SYNOPSIS
 
